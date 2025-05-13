@@ -49,10 +49,10 @@ window.onload = function () {
     document.addEventListener("keydown", movePlayer);
     document.addEventListener("keyup", stopPlayer);
 
-    // start the game with the ball going to Player 1
+    // Start the game with the ball going to Player 1
     resetBall(0);  
 
-    // handle restarting with Spacebar
+    // Handle restarting with Spacebar
     document.addEventListener("keydown", function(e) {
         if (e.code === "Space") {
             restartGame();
@@ -110,7 +110,7 @@ function update() {
         ball.x = player2.x - ball.width;
     }
 
-    // update scores (optional: display scores on screen)
+    // Check if the ball went off the screen
     if (ball.x < 0) {
         player2Score++;
         resetBall(2); // Player 2 scored
@@ -119,7 +119,7 @@ function update() {
         resetBall(1); // Player 1 scored
     }
 
-    // draw paddles and ball
+    // Draw paddles and ball
     context.fillStyle = "white";
     context.fillRect(player1.x, player1.y, player1.width, player1.height);
     context.fillRect(player2.x, player2.y, player2.width, player2.height);
@@ -127,7 +127,7 @@ function update() {
     context.fillStyle = "red";
     context.fillRect(ball.x, ball.y, ball.width, ball.height);
 
-    // draw scores
+    // Draw scores
     context.fillStyle = "white";
     context.font = "20px Arial";
     context.fillText("Player 1: " + player1Score, 10, 20); // Player 1 score
@@ -137,5 +137,60 @@ function update() {
 }
 
 function movePlayer(e) {
+    if (e.code === "KeyW") {
+        player1.velocityY = -3;
+    } else if (e.code === "KeyS") {
+        player1.velocityY = 3;
+    }
 
+    if (e.code === "ArrowUp") {
+        player2.velocityY = -3;
+    } else if (e.code === "ArrowDown") {
+        player2.velocityY = 3;
+    }
+}
+
+function stopPlayer(e) {
+    if (["KeyW", "KeyS"].includes(e.code)) {
+        player1.velocityY = 0;
+    }
+    if (["ArrowUp", "ArrowDown"].includes(e.code)) {
+        player2.velocityY = 0;
+    }
+}
+
+function outOfBounds(y, height) {
+    return y < 0 || y + height > boardHeight;
+}
+
+function detectCollision(ball, paddle) {
+    return (
+        ball.x < paddle.x + paddle.width &&
+        ball.x + ball.width > paddle.x &&
+        ball.y < paddle.y + paddle.height &&
+        ball.y + ball.height > paddle.y
+    );
+}
+
+// reset ball position and direction
+function resetBall(playerScored) {
+    ball.x = boardWidth / 2 - ball.width / 2;
+    ball.y = boardHeight / 2 - ball.height / 2;
+
+    if (playerScored === 1) {
+        ball.velocityX = 2; // Player 1 scored, ball goes to the right
+    } else if (playerScored === 2) {
+        ball.velocityX = -2; // Player 2 scored, ball goes to the left
+    }
+
+    ball.velocityY = Math.random() < 0.5 ? 2 : -2; // Random vertical direction
+}
+
+// restart game with Spacebar
+function restartGame() {
+    player1Score = 0;
+    player2Score = 0; // Reset scores
+    player1.y = boardHeight / 2 - playerHeight / 2;
+    player2.y = boardHeight / 2 - playerHeight / 2;        
+    resetBall(0); // Reset the ball to start the game
 }
