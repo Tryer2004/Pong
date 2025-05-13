@@ -120,13 +120,29 @@ function update() {
 
     // paddle collision
     if (detectCollision(ball, player1)) {
-        ball.velocityX = -ball.velocityX * 1.2; 
+        let collidePoint = ball.y + ball.height / 2 - (player1.y + player1.height / 2);
+        collidePoint = collidePoint / (player1.height / 2); // -1 to 1
+    
+        let angleRad = collidePoint * Math.PI / 4; // max 45 degrees
+        let speed = Math.sqrt(ball.velocityX ** 2 + ball.velocityY ** 2) * 1.05;
+    
+        ball.velocityX = speed * Math.cos(angleRad);
+        ball.velocityY = speed * Math.sin(angleRad);
         ball.x = player1.x + player1.width;
     }
+    
     if (detectCollision(ball, player2)) {
-        ball.velocityX = -ball.velocityX * 1.2;
+        let collidePoint = ball.y + ball.height / 2 - (player2.y + player2.height / 2);
+        collidePoint = collidePoint / (player2.height / 2); // -1 to 1
+    
+        let angleRad = collidePoint * Math.PI / 4;
+        let speed = Math.sqrt(ball.velocityX ** 2 + ball.velocityY ** 2) * 1.05;
+    
+        ball.velocityX = -speed * Math.cos(angleRad);
+        ball.velocityY = speed * Math.sin(angleRad);
         ball.x = player2.x - ball.width;
     }
+    
 
     // draw paddles
     context.fillStyle = "white";
