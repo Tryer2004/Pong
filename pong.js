@@ -40,10 +40,6 @@ let ball = {
 let player1Score = 0;
 let player2Score = 0;
 
-// game state
-let isGameRunning = false;
-let isGameOver = false;
-
 window.onload = function () {
     board = document.getElementById("board");
     board.width = boardWidth;
@@ -53,12 +49,13 @@ window.onload = function () {
     document.addEventListener("keydown", movePlayer);
     document.addEventListener("keyup", stopPlayer);
 
-    // start/restart game with space
-    document.addEventListener("keydown", function (e) {
-        if (e.code === "Space" && !isGameRunning && !isGameOver) {
-            isGameRunning = true;
-        } else if (e.code === "Space" && isGameOver) {
-            resetGame();
+    // start the game with the ball going to Player 1
+    resetBall(0);  
+
+    // handle restarting with Spacebar
+    document.addEventListener("keydown", function(e) {
+        if (e.code === "Space") {
+            restartGame();
         }
     });
 
@@ -67,25 +64,6 @@ window.onload = function () {
 
 function update() {
     context.clearRect(0, 0, boardWidth, boardHeight);
-
-    // Start screen
-    if (!isGameRunning && !isGameOver) {
-        context.fillStyle = "white";
-        context.font = "20px Arial";
-        context.fillText("Press SPACE to Start", boardWidth / 2 - 100, boardHeight / 2);
-        requestAnimationFrame(update);
-        return;
-    }
-
-    // Game Over screen
-    if (isGameOver) {
-        context.fillStyle = "white";
-        context.font = "20px Arial";
-        const winner = player1Score === 5 ? "Player 1 Wins!" : "Player 2 Wins!";
-        context.fillText(winner, boardWidth / 2 - 70, boardHeight / 2);
-        context.fillText("Press SPACE to Restart", boardWidth / 2 - 100, boardHeight / 2 + 30);
-        return;
-    }
 
     // move paddles
     let nextY1 = player1.y + player1.velocityY;
@@ -102,18 +80,7 @@ function update() {
     ball.x += ball.velocityX;
     ball.y += ball.velocityY;
 
-    // scoring
-    if (ball.x < 0) {
-        player2Score++;
-        checkGameOver();
-        resetBall();
-    } else if (ball.x + ball.width > boardWidth) {
-        player1Score++;
-        checkGameOver();
-        resetBall();
-    }
-
-    // bounce off top and bottom
+    // bounce off top/bottom
     if (ball.y <= 0 || ball.y + ball.height >= boardHeight) {
         ball.velocityY *= -1;
     }
@@ -122,43 +89,36 @@ function update() {
     if (detectCollision(ball, player1)) {
         let collidePoint = ball.y + ball.height / 2 - (player1.y + player1.height / 2);
         collidePoint = collidePoint / (player1.height / 2); // -1 to 1
-    
-        let angleRad = collidePoint * Math.PI / 4; // max 45 degrees
+
+        let angleRad = collidePoint * Math.PI / 4;
         let speed = Math.sqrt(ball.velocityX ** 2 + ball.velocityY ** 2) * 1.05;
-    
+
         ball.velocityX = speed * Math.cos(angleRad);
         ball.velocityY = speed * Math.sin(angleRad);
         ball.x = player1.x + player1.width;
     }
-    
+
     if (detectCollision(ball, player2)) {
         let collidePoint = ball.y + ball.height / 2 - (player2.y + player2.height / 2);
         collidePoint = collidePoint / (player2.height / 2); // -1 to 1
-    
+
         let angleRad = collidePoint * Math.PI / 4;
         let speed = Math.sqrt(ball.velocityX ** 2 + ball.velocityY ** 2) * 1.05;
-    
+
         ball.velocityX = -speed * Math.cos(angleRad);
         ball.velocityY = speed * Math.sin(angleRad);
         ball.x = player2.x - ball.width;
     }
-    
 
-    // draw paddles
+    // draw paddles and ball
     context.fillStyle = "white";
     context.fillRect(player1.x, player1.y, player1.width, player1.height);
     context.fillRect(player2.x, player2.y, player2.width, player2.height);
 
-    // draw ball
     context.fillStyle = "red";
     context.fillRect(ball.x, ball.y, ball.width, ball.height);
 
-    // draw score
-    context.fillStyle = "white";
-    context.font = "20px Arial";
-    context.fillText(player1Score, boardWidth / 4, 30);
-    context.fillText(player2Score, 3 * boardWidth / 4, 30);
-
+    // update scores (optional: display scores on screen)
     requestAnimationFrame(update);
 }
 
@@ -198,25 +158,22 @@ function detectCollision(ball, paddle) {
     );
 }
 
-function resetBall() {
+// reset ball position and direction
+function resetBall(playerScored) {
     ball.x = boardWidth / 2 - ball.width / 2;
     ball.y = boardHeight / 2 - ball.height / 2;
-    ball.velocityX = Math.random() < 0.5 ? 2 : -2;
+
+    if (playerScored === 1) {
+        ball.velocityX = 2;
+    } else if (playerScored === 2) {
+        ball.velocityX = -2;
+    }
+
     ball.velocityY = Math.random() < 0.5 ? 2 : -2;
 }
 
-function checkGameOver() {
-    if (player1Score === 5 || player2Score === 5) {
-        isGameOver = true;
-        isGameRunning = false;
-    }
-}
-
-function resetGame() {
-    player1Score = 0;
-    player2Score = 0;
-    isGameOver = false;
-    isGameRunning = false;
-    resetBall();
-    requestAnimationFrame(update);
+// restart game with Spacebar
+function restartGame() {
+    player1.y = boardHeight / 2 - playerHeight / 2;
+    player2.y = boardHeight / 2 - playerHeight / 2;        
 }
