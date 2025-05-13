@@ -127,64 +127,15 @@ function update() {
     context.fillStyle = "red";
     context.fillRect(ball.x, ball.y, ball.width, ball.height);
 
+    // draw scores
+    context.fillStyle = "white";
+    context.font = "20px Arial";
+    context.fillText("Player 1: " + player1Score, 10, 20); // Player 1 score
+    context.fillText("Player 2: " + player2Score, boardWidth - 120, 20); // Player 2 score
+
     requestAnimationFrame(update);
 }
 
 function movePlayer(e) {
-    if (e.code === "KeyW") {
-        player1.velocityY = -3;
-    } else if (e.code === "KeyS") {
-        player1.velocityY = 3;
-    }
 
-    if (e.code === "ArrowUp") {
-        player2.velocityY = -3;
-    } else if (e.code === "ArrowDown") {
-        player2.velocityY = 3;
-    }
-}
-
-function stopPlayer(e) {
-    if (["KeyW", "KeyS"].includes(e.code)) {
-        player1.velocityY = 0;
-    }
-    if (["ArrowUp", "ArrowDown"].includes(e.code)) {
-        player2.velocityY = 0;
-    }
-}
-
-function outOfBounds(y, height) {
-    return y < 0 || y + height > boardHeight;
-}
-
-function detectCollision(ball, paddle) {
-    return (
-        ball.x < paddle.x + paddle.width &&
-        ball.x + ball.width > paddle.x &&
-        ball.y < paddle.y + paddle.height &&
-        ball.y + ball.height > paddle.y
-    );
-}
-
-// reset ball position and direction
-function resetBall(playerScored) {
-    ball.x = boardWidth / 2 - ball.width / 2;
-    ball.y = boardHeight / 2 - ball.height / 2;
-
-    if (playerScored === 1) {
-        ball.velocityX = 2; // Ball goes towards Player 2
-    } else if (playerScored === 2) {
-        ball.velocityX = -2; // Ball goes towards Player 1
-    }
-
-    ball.velocityY = Math.random() < 0.5 ? 2 : -2;
-}
-
-// restart game with Spacebar
-function restartGame() {
-    player1Score = 0;
-    player2Score = 0;
-    player1.y = boardHeight / 2 - playerHeight / 2;
-    player2.y = boardHeight / 2 - playerHeight / 2;        
-    resetBall(0);  // reset ball to center at the start of the game
 }
