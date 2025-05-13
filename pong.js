@@ -1,4 +1,8 @@
 // === Game Settings ===
+let paused = false;
+let isSinglePlayer = true;
+let aiDifficulty = "medium"; // Options: easy, medium, hard
+
 let board;
 let boardWidth = 500;
 let boardHeight = 500;
@@ -49,26 +53,72 @@ window.onload = function () {
 
     document.addEventListener("keydown", movePlayer);
     document.addEventListener("keyup", stopPlayer);
+     
+    
+        
+        
 
     document.addEventListener("keydown", function (e) {
         if (e.code === "Space" && gameOver) {
             restartGame();
+        } else if (e.code === "KeyM") {
+            isSinglePlayer = !isSinglePlayer;
+        } else if (e.code === "Digit1") {
+            aiDifficulty = "easy";
+        } else if (e.code === "Digit2") {
+            aiDifficulty = "medium";
+        } else if (e.code === "Digit3") {
+            aiDifficulty = "hard";
+        } else if (e.code === "KeyP") {
+            paused = !paused;
+            if (!paused && !gameOver) {
+                requestAnimationFrame(update); // Resume game loop
+            }
         }
     });
+    
+    
 
-    resetBall(0); // Start with ball centered
+    resetBall(0);
     requestAnimationFrame(update);
 };
 
 // === Game Loop ===
 function update() {
     context.clearRect(0, 0, boardWidth, boardHeight);
+    if(paused) {
+        //Draw paused screen
+        context.fillStyle = "white";
+        context.font= "30px Arial"; 
+        context.fillText("Paused" , boardWidth / 2 - 50, boardHeight / 2);
+        return; 
 
-    // Move players
+
+
+    }
+
+    // Center dashed line
+    for (let y = 0; y < boardHeight; y += 20) {
+        context.fillStyle = "gray";
+        context.fillRect(boardWidth / 2 - 1, y, 2, 10);
+    }
+
+    // Move player1
     let nextY1 = player1.y + player1.velocityY;
-    let nextY2 = player2.y + player2.velocityY;
-
     if (!outOfBounds(nextY1, player1.height)) player1.y = nextY1;
+
+    // Move player2 (AI or player)
+    if (isSinglePlayer) {
+        let aiSpeed = getAISpeed();
+        if (ball.y + ball.height / 2 < player2.y + player2.height / 2) {
+            player2.velocityY = -aiSpeed;
+        } else if (ball.y + ball.height / 2 > player2.y + player2.height / 2) {
+            player2.velocityY = aiSpeed;
+        } else {
+            player2.velocityY = 0;
+        }
+    }
+    let nextY2 = player2.y + player2.velocityY;
     if (!outOfBounds(nextY2, player2.height)) player2.y = nextY2;
 
     // Move ball
@@ -81,26 +131,17 @@ function update() {
     }
 
     // Paddle collisions
-    if (detectCollision(ball, player1)) {
-        reflectBall(ball, player1, 1);
-    }
+    if (detectCollision(ball, player1)) reflectBall(ball, player1, 1);
+    if (detectCollision(ball, player2)) reflectBall(ball, player2, -1);
 
-    if (detectCollision(ball, player2)) {
-        reflectBall(ball, player2, -1);
-    }
-
-    // Check if someone scores
+    // Check score
     if (ball.x < 0) {
         player2Score++;
-        if (player2Score >= 5) {
-            gameOver = true;
-        }
+        if (player2Score >= 5) gameOver = true;
         resetBall(2);
     } else if (ball.x > boardWidth) {
         player1Score++;
-        if (player1Score >= 5) {
-            gameOver = true;
-        }
+        if (player1Score >= 5) gameOver = true;
         resetBall(1);
     }
 
@@ -118,12 +159,18 @@ function update() {
     context.fillText("Player 1: " + player1Score, 10, 20);
     context.fillText("Player 2: " + player2Score, boardWidth - 120, 20);
 
-    // Show winner
+    // Show mode and difficulty
+    context.fillText("Mode: " + (isSinglePlayer ? "Single Player" : "Multiplayer"), boardWidth / 2 - 70, 20);
+    if (isSinglePlayer) {
+        context.fillText("AI: " + aiDifficulty.toUpperCase(), boardWidth / 2 - 40, 40);
+    }
+
+    // Draw game over
     if (gameOver) {
         context.fillStyle = "red";
         context.font = "30px Arial";
         let winner = player1Score >= 5 ? "Player 1 Wins!" : "Player 2 Wins!";
-        context.fillText(winner, boardWidth / 2 - 100, boardHeight / 2);
+        context.fillText(winner, boardWidth / 2 - context.measureText(winner).width / 2, boardHeight / 2);
         context.font = "20px Arial";
         context.fillText("Press Space to Restart", boardWidth / 2 - 110, boardHeight / 2 + 30);
     } else {
@@ -135,8 +182,10 @@ function update() {
 function movePlayer(e) {
     if (e.code === "KeyW") player1.velocityY = -3;
     if (e.code === "KeyS") player1.velocityY = 3;
-    if (e.code === "ArrowUp") player2.velocityY = -3;
-    if (e.code === "ArrowDown") player2.velocityY = 3;
+    if (!isSinglePlayer) {
+        if (e.code === "ArrowUp") player2.velocityY = -3;
+        if (e.code === "ArrowDown") player2.velocityY = 3;
+    }
 }
 
 function stopPlayer(e) {
@@ -185,4 +234,13 @@ function restartGame() {
     player2.y = boardHeight / 2 - playerHeight / 2;
     resetBall(0);
     requestAnimationFrame(update);
+}
+
+function getAISpeed() {
+    switch (aiDifficulty) {
+        case "easy": return 1;
+        case "medium": return 1.5;
+        case "hard": return 2.5;
+        default: return 1.5;
+    }
 }
