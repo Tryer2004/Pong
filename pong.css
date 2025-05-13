@@ -1,0 +1,8 @@
+body{
+    text-align: center;
+}
+#board{
+    background-color:black;
+    border-top:5px solid darkcyan;
+    border-bottom:5px solid darkcyan;
+}
