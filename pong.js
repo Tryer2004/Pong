@@ -120,11 +120,11 @@ function update() {
 
     // paddle collision
     if (detectCollision(ball, player1)) {
-        ball.velocityX *= -1;
+        ball.velocityX = -ball.velocityX * 1.2; 
         ball.x = player1.x + player1.width;
     }
     if (detectCollision(ball, player2)) {
-        ball.velocityX *= -1;
+        ball.velocityX = -ball.velocityX * 1.2;
         ball.x = player2.x - ball.width;
     }
 
