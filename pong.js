@@ -110,6 +110,15 @@ function update() {
         ball.x = player2.x - ball.width;
     }
 
+    // update scores (optional: display scores on screen)
+    if (ball.x < 0) {
+        player2Score++;
+        resetBall(2); // Player 2 scored
+    } else if (ball.x > boardWidth) {
+        player1Score++;
+        resetBall(1); // Player 1 scored
+    }
+
     // draw paddles and ball
     context.fillStyle = "white";
     context.fillRect(player1.x, player1.y, player1.width, player1.height);
@@ -118,7 +127,6 @@ function update() {
     context.fillStyle = "red";
     context.fillRect(ball.x, ball.y, ball.width, ball.height);
 
-    // update scores (optional: display scores on screen)
     requestAnimationFrame(update);
 }
 
@@ -164,9 +172,9 @@ function resetBall(playerScored) {
     ball.y = boardHeight / 2 - ball.height / 2;
 
     if (playerScored === 1) {
-        ball.velocityX = 2;
+        ball.velocityX = 2; // Ball goes towards Player 2
     } else if (playerScored === 2) {
-        ball.velocityX = -2;
+        ball.velocityX = -2; // Ball goes towards Player 1
     }
 
     ball.velocityY = Math.random() < 0.5 ? 2 : -2;
@@ -174,6 +182,9 @@ function resetBall(playerScored) {
 
 // restart game with Spacebar
 function restartGame() {
+    player1Score = 0;
+    player2Score = 0;
     player1.y = boardHeight / 2 - playerHeight / 2;
     player2.y = boardHeight / 2 - playerHeight / 2;        
+    resetBall(0);  // reset ball to center at the start of the game
 }
