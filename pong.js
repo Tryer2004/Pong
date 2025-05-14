@@ -276,16 +276,16 @@ function getAISpeed() {
     let difficultyFactor;
     switch (aiDifficulty) {
         case "easy":
-            difficultyFactor = 0.5;
+            difficultyFactor = 0.50;
             break;
         case "medium":
-            difficultyFactor = 0.75;
+            difficultyFactor = 0.55;
             break;
         case "hard":
-            difficultyFactor = 1;
+            difficultyFactor = 0.70;
             break;
         default:
-            difficultyFactor = 0.75;
+            difficultyFactor = 0.55;
             break;
     }
 
