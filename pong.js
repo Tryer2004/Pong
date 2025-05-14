@@ -1,4 +1,4 @@
- === Game Settings ===
+// === Game Settings ===
 let paused = false;
 let isSinglePlayer = true;
 let aiDifficulty = "medium"; // Options: easy, medium, hard
