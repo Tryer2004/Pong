@@ -211,7 +211,7 @@ function reflectBall(ball, paddle, direction) {
     let collidePoint = ball.y + ball.height / 2 - (paddle.y + paddle.height / 2);
     collidePoint = collidePoint / (paddle.height / 2); // -1 to 1
     let angleRad = collidePoint * Math.PI / 4;
-    let speed = Math.sqrt(ball.velocityX ** 2 + ball.velocityY ** 2) * 1.05;
+    let speed = Math.sqrt(ball.velocityX ** 2 + ball.velocityY ** 2) * 1.2; // increase ball on hit
 
     ball.velocityX = direction * speed * Math.cos(angleRad);
     ball.velocityY = speed * Math.sin(angleRad);
@@ -222,9 +222,29 @@ function resetBall(playerScored) {
     ball.x = boardWidth / 2 - ball.width / 2;
     ball.y = boardHeight / 2 - ball.height / 2;
 
-    ball.velocityX = playerScored === 1 ? 2 : playerScored === 2 ? -2 : (Math.random() < 0.5 ? 2 : -2);
-    ball.velocityY = Math.random() < 0.5 ? 2 : -2;
+    
 }
+function resetBall(playerScored) {
+    ball.x = boardWidth / 2 - ball.width / 2;
+    ball.y = boardHeight / 2 - ball.height / 2;
+
+    // Set horizontal direction only — toward the opponent
+    if (playerScored === 1) {
+        // Player 1 scored → ball goes to Player 2 (right)
+        ball.velocityX = 2;
+    } else if (playerScored === 2) {
+        // Player 2 scored → ball goes to Player 1 (left)
+        ball.velocityX = -2;
+    } else {
+        // First serve or random
+        ball.velocityX = Math.random() < 0.5 ? -2 : 2;
+    }
+
+    // No vertical movement at the start
+    ball.velocityY = 0;
+}
+
+
 
 function restartGame() {
     gameOver = false;
