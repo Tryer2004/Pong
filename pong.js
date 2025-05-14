@@ -1,8 +1,8 @@
-// === Game Settings ===
+ === Game Settings ===
 let paused = false;
 let isSinglePlayer = true;
 let aiDifficulty = "medium"; // Options: easy, medium, hard
-
+const MAX_BALL_SPEED = 8; // ts is the max speed
 let board;
 let boardWidth = 500;
 let boardHeight = 500;
@@ -180,17 +180,21 @@ function update() {
 
 // === Controls ===
 function movePlayer(e) {
-    if (e.code === "KeyW") player1.velocityY = -3;
-    if (e.code === "KeyS") player1.velocityY = 3;
+    let speed = getBallSpeed(); //Paddle speed based on balls speed
+    if (e.code === "KeyW") player1.velocityY = -speed;
+    if (e.code === "KeyS") player1.velocityY = speed;
     if (!isSinglePlayer) {
-        if (e.code === "ArrowUp") player2.velocityY = -3;
-        if (e.code === "ArrowDown") player2.velocityY = 3;
+        if (e.code === "ArrowUp") player2.velocityY = -speed;
+        if (e.code === "ArrowDown") player2.velocityY = speed;
     }
 }
 
 function stopPlayer(e) {
-    if (["KeyW", "KeyS"].includes(e.code)) player1.velocityY = 0;
-    if (["ArrowUp", "ArrowDown"].includes(e.code)) player2.velocityY = 0;
+    if (["KeyW", "KeyS"].includes(e.code)) {
+        player1.velocityY = 0;
+    }
+    if (["ArrowUp", "ArrowDown"].includes(e.code)) {
+         player2.velocityY = 0;}
 }
 
 // === Helpers ===
@@ -208,6 +212,7 @@ function detectCollision(ball, paddle) {
 }
 
 function reflectBall(ball, paddle, direction) {
+    
     let collidePoint = ball.y + ball.height / 2 - (paddle.y + paddle.height / 2);
     collidePoint = collidePoint / (paddle.height / 2); // -1 to 1
     let angleRad = collidePoint * Math.PI / 4;
@@ -216,14 +221,21 @@ function reflectBall(ball, paddle, direction) {
     ball.velocityX = direction * speed * Math.cos(angleRad);
     ball.velocityY = speed * Math.sin(angleRad);
     ball.x = direction === 1 ? paddle.x + paddle.width : paddle.x - ball.width;
+
+//Limit ball speed
+let currentSpeed = Math.sqrt (ball.velocityX ** 2 + ball.velocityY ** 2)
+if (currentSpeed > MAX_BALL_SPEED){
+let scale = MAX_BALL_SPEED / currentSpeed;
+ball.velocityX *= scale;
+ball.velocityY *= scale; 
+
+}
 }
 
-function resetBall(playerScored) {
-    ball.x = boardWidth / 2 - ball.width / 2;
-    ball.y = boardHeight / 2 - ball.height / 2;
+
 
     
-}
+
 function resetBall(playerScored) {
     ball.x = boardWidth / 2 - ball.width / 2;
     ball.y = boardHeight / 2 - ball.height / 2;
@@ -256,11 +268,42 @@ function restartGame() {
     requestAnimationFrame(update);
 }
 
+
 function getAISpeed() {
+    let ballSpeed = Math.sqrt(ball.velocityX ** 2 + ball.velocityY ** 2); // Calculate ball speed
+
+    // Define difficulty factor
+    let difficultyFactor;
     switch (aiDifficulty) {
-        case "easy": return 1;
-        case "medium": return 1.5;
-        case "hard": return 2.5;
-        default: return 1.5;
+        case "easy":
+            difficultyFactor = 0.5;
+            break;
+        case "medium":
+            difficultyFactor = 0.75;
+            break;
+        case "hard":
+            difficultyFactor = 1;
+            break;
+        default:
+            difficultyFactor = 0.75;
+            break;
     }
+
+    // Calculate AI speed based on ball speed and difficulty
+    let aiSpeed = ballSpeed * difficultyFactor;
+
+    // Calculate distance to ball (center of ball vs center of AI paddle)
+    let distanceToBall = Math.abs(ball.y + ball.height / 2 - (player2.y + player2.height / 2));
+
+    // AI's speed also depends on how far it is from the ball
+    aiSpeed += distanceToBall / 100;
+
+    // Ensure AI speed doesn't exceed a max value (e.g., 6)
+    return Math.min(aiSpeed, 6);
+}
+
+
+function getBallSpeed() {
+    return Math.sqrt(ball.velocityX ** 2 + ball.velocityY ** 2);
+
 }
