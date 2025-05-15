@@ -2,17 +2,54 @@
 let paused = false;
 let isSinglePlayer = true;
 let aiDifficulty = "medium"; // Options: easy, medium, hard
-const MAX_BALL_SPEED = 8; // ts is the max speed
+const MAX_BALL_SPEED = 8;
 let board;
 let boardWidth = 500;
 let boardHeight = 500;
 let context;
+let coins = 0; // Coin count loaded from localStorage
+let coinsAwarded = false; // Flag to prevent multiple coin awards
 
+// === Shop System ===
+const shopItems = {
+    red: { cost: 5, color: "red" },
+    blue: { cost: 10, color: "blue" },
+    green: { cost: 15, color: "green" }
+};
+
+function buyItem(itemKey) {
+    const item = shopItems[itemKey];
+    if (coins >= item.cost) {
+        coins -= item.cost;
+        selectedBallColor = item.color;
+        localStorage.setItem("pongCoins", coins); // Save updated coin count
+        updateCoinDisplay();
+    } else {
+        alert("Not enough coins!");
+    }
+}
+
+function updateCoinDisplay() {
+    const coinDisplay = document.getElementById("coin-count");
+    if (coinDisplay) coinDisplay.textContent = coins;
+}
+
+function toggleShop() {
+    const shop = document.getElementById("shop");
+    if (shop.style.display === "none") {
+        shop.style.display = "block";
+    } else {
+        shop.style.display = "none";
+    }
+}
+
+// === Player and Ball Dimensions ===
 let playerWidth = 10;
 let playerHeight = 50;
 let ballWidth = 10;
 let ballHeight = 10;
 
+// === Scores & Game State ===
 let gameOver = false;
 let player1Score = 0;
 let player2Score = 0;
@@ -44,6 +81,8 @@ let ball = {
     velocityY: 2
 };
 
+let selectedBallColor = "red"; // default ball color
+
 // === Init Game ===
 window.onload = function () {
     board = document.getElementById("board");
@@ -51,12 +90,16 @@ window.onload = function () {
     board.height = boardHeight;
     context = board.getContext("2d");
 
+    let savedCoins = localStorage.getItem("pongCoins");
+    if (savedCoins !== null) {
+        coins = parseInt(savedCoins);
+    } else {
+        coins = 0;
+    }
+    updateCoinDisplay();
+
     document.addEventListener("keydown", movePlayer);
     document.addEventListener("keyup", stopPlayer);
-     
-    
-        
-        
 
     document.addEventListener("keydown", function (e) {
         if (e.code === "Space" && gameOver) {
@@ -74,10 +117,10 @@ window.onload = function () {
             if (!paused && !gameOver) {
                 requestAnimationFrame(update); // Resume game loop
             }
+        } else if (e.code === "KeyE"){
+            toggleShop();
         }
     });
-    
-    
 
     resetBall(0);
     requestAnimationFrame(update);
@@ -86,86 +129,109 @@ window.onload = function () {
 // === Game Loop ===
 function update() {
     context.clearRect(0, 0, boardWidth, boardHeight);
+
     if(paused) {
         //Draw paused screen
         context.fillStyle = "white";
         context.font= "30px Arial"; 
         context.fillText("Paused" , boardWidth / 2 - 50, boardHeight / 2);
         return; 
+    } 
 
+    if (player2Score >= 5 || player1Score >= 5) {
+        gameOver = true;
 
+        context.fillText("Coins: " + coins, 10, 50);
 
-    }
+        // Only give rewards once, if Player 1 wins and it's single player
+        if (player1Score >= 5 && isSinglePlayer && !coinsAwarded) {
+            let reward = 0;
+            if (aiDifficulty === "easy") reward = 1;
+            else if (aiDifficulty === "medium") reward = 5;
+            else if (aiDifficulty === "hard") reward = 15;
 
-    // Center dashed line
-    for (let y = 0; y < boardHeight; y += 20) {
-        context.fillStyle = "gray";
-        context.fillRect(boardWidth / 2 - 1, y, 2, 10);
-    }
+            coins += reward;
+            localStorage.setItem("pongCoins", coins);
+            updateCoinDisplay();
+            console.log(`You won! Coins earned: ${reward}. Total coins: ${coins}`);
 
-    // Move player1
-    let nextY1 = player1.y + player1.velocityY;
-    if (!outOfBounds(nextY1, player1.height)) player1.y = nextY1;
-
-    // Move player2 (AI or player)
-    if (isSinglePlayer) {
-        let aiSpeed = getAISpeed();
-        if (ball.y + ball.height / 2 < player2.y + player2.height / 2) {
-            player2.velocityY = -aiSpeed;
-        } else if (ball.y + ball.height / 2 > player2.y + player2.height / 2) {
-            player2.velocityY = aiSpeed;
-        } else {
-            player2.velocityY = 0;
+            coinsAwarded = true;  // prevent awarding again
         }
+    } else {
+        // Game still running - proceed with update
+
+        // Center dashed line
+        for (let y = 0; y < boardHeight; y += 20) {
+            context.fillStyle = "gray";
+            context.fillRect(boardWidth / 2 - 1, y, 2, 10);
+        }
+
+        // Move player1
+        let nextY1 = player1.y + player1.velocityY;
+        if (!outOfBounds(nextY1, player1.height)) player1.y = nextY1;
+
+        // Move player2 (AI or player)
+        if (isSinglePlayer) {
+            let aiSpeed = getAISpeed();
+            if (ball.y + ball.height / 2 < player2.y + player2.height / 2) {
+                player2.velocityY = -aiSpeed;
+            } else if (ball.y + ball.height / 2 > player2.y + player2.height / 2) {
+                player2.velocityY = aiSpeed;
+            } else {
+                player2.velocityY = 0;
+            }
+        }
+        let nextY2 = player2.y + player2.velocityY;
+        if (!outOfBounds(nextY2, player2.height)) player2.y = nextY2;
+
+        // Move ball
+        ball.x += ball.velocityX;
+        ball.y += ball.velocityY;
+
+        // Bounce off top/bottom
+        if (ball.y <= 0 || ball.y + ball.height >= boardHeight) {
+            ball.velocityY *= -1;
+        }
+
+        // Paddle collisions
+        if (detectCollision(ball, player1)) reflectBall(ball, player1, 1);
+        if (detectCollision(ball, player2)) reflectBall(ball, player2, -1);
+
+        // Check score
+        if (ball.x < 0) {
+            player2Score++;
+            if (player2Score >= 5) gameOver = true;
+            resetBall(2);
+        } else if (ball.x > boardWidth) {
+            player1Score++;
+            if (player1Score >= 5) gameOver = true;
+            resetBall(1);
+        }
+
+        // Draw paddles and ball
+        context.fillStyle = "white";
+        context.fillRect(player1.x, player1.y, player1.width, player1.height);
+        context.fillRect(player2.x, player2.y, player2.width, player2.height);
+
+        context.fillStyle = selectedBallColor;
+        context.fillRect(ball.x, ball.y, ball.width, ball.height);
+
+        // Draw scores
+        context.fillStyle = "white";
+        context.font = "20px Arial";
+        context.fillText("Player 1: " + player1Score, 10, 20);
+        context.fillText("Player 2: " + player2Score, boardWidth - 120, 20);
+
+        // Show mode and difficulty
+        context.fillText("Mode: " + (isSinglePlayer ? "Single Player" : "Multiplayer"), boardWidth / 2 - 70, 20);
+        if (isSinglePlayer) {
+            context.fillText("AI: " + aiDifficulty.toUpperCase(), boardWidth / 2 - 40, 40);
+        }
+
+        requestAnimationFrame(update);
     }
-    let nextY2 = player2.y + player2.velocityY;
-    if (!outOfBounds(nextY2, player2.height)) player2.y = nextY2;
 
-    // Move ball
-    ball.x += ball.velocityX;
-    ball.y += ball.velocityY;
-
-    // Bounce off top/bottom
-    if (ball.y <= 0 || ball.y + ball.height >= boardHeight) {
-        ball.velocityY *= -1;
-    }
-
-    // Paddle collisions
-    if (detectCollision(ball, player1)) reflectBall(ball, player1, 1);
-    if (detectCollision(ball, player2)) reflectBall(ball, player2, -1);
-
-    // Check score
-    if (ball.x < 0) {
-        player2Score++;
-        if (player2Score >= 5) gameOver = true;
-        resetBall(2);
-    } else if (ball.x > boardWidth) {
-        player1Score++;
-        if (player1Score >= 5) gameOver = true;
-        resetBall(1);
-    }
-
-    // Draw paddles and ball
-    context.fillStyle = "white";
-    context.fillRect(player1.x, player1.y, player1.width, player1.height);
-    context.fillRect(player2.x, player2.y, player2.width, player2.height);
-
-    context.fillStyle = "red";
-    context.fillRect(ball.x, ball.y, ball.width, ball.height);
-
-    // Draw scores
-    context.fillStyle = "white";
-    context.font = "20px Arial";
-    context.fillText("Player 1: " + player1Score, 10, 20);
-    context.fillText("Player 2: " + player2Score, boardWidth - 120, 20);
-
-    // Show mode and difficulty
-    context.fillText("Mode: " + (isSinglePlayer ? "Single Player" : "Multiplayer"), boardWidth / 2 - 70, 20);
-    if (isSinglePlayer) {
-        context.fillText("AI: " + aiDifficulty.toUpperCase(), boardWidth / 2 - 40, 40);
-    }
-
-    // Draw game over
+    // Draw game over (on top)
     if (gameOver) {
         context.fillStyle = "red";
         context.font = "30px Arial";
@@ -173,8 +239,6 @@ function update() {
         context.fillText(winner, boardWidth / 2 - context.measureText(winner).width / 2, boardHeight / 2);
         context.font = "20px Arial";
         context.fillText("Press Space to Restart", boardWidth / 2 - 110, boardHeight / 2 + 30);
-    } else {
-        requestAnimationFrame(update);
     }
 }
 
@@ -194,7 +258,8 @@ function stopPlayer(e) {
         player1.velocityY = 0;
     }
     if (["ArrowUp", "ArrowDown"].includes(e.code)) {
-         player2.velocityY = 0;}
+         player2.velocityY = 0;
+    }
 }
 
 // === Helpers ===
@@ -212,7 +277,6 @@ function detectCollision(ball, paddle) {
 }
 
 function reflectBall(ball, paddle, direction) {
-    
     let collidePoint = ball.y + ball.height / 2 - (paddle.y + paddle.height / 2);
     collidePoint = collidePoint / (paddle.height / 2); // -1 to 1
     let angleRad = collidePoint * Math.PI / 4;
@@ -222,19 +286,14 @@ function reflectBall(ball, paddle, direction) {
     ball.velocityY = speed * Math.sin(angleRad);
     ball.x = direction === 1 ? paddle.x + paddle.width : paddle.x - ball.width;
 
-//Limit ball speed
-let currentSpeed = Math.sqrt (ball.velocityX ** 2 + ball.velocityY ** 2)
-if (currentSpeed > MAX_BALL_SPEED){
-let scale = MAX_BALL_SPEED / currentSpeed;
-ball.velocityX *= scale;
-ball.velocityY *= scale; 
-
+    //Limit ball speed
+    let currentSpeed = Math.sqrt(ball.velocityX ** 2 + ball.velocityY ** 2);
+    if (currentSpeed > MAX_BALL_SPEED){
+        let scale = MAX_BALL_SPEED / currentSpeed;
+        ball.velocityX *= scale;
+        ball.velocityY *= scale; 
+    }
 }
-}
-
-
-
-    
 
 function resetBall(playerScored) {
     ball.x = boardWidth / 2 - ball.width / 2;
@@ -256,10 +315,9 @@ function resetBall(playerScored) {
     ball.velocityY = 0;
 }
 
-
-
 function restartGame() {
     gameOver = false;
+    coinsAwarded = false;  // reset flag here so coins can be awarded again
     player1Score = 0;
     player2Score = 0;
     player1.y = boardHeight / 2 - playerHeight / 2;
@@ -267,7 +325,6 @@ function restartGame() {
     resetBall(0);
     requestAnimationFrame(update);
 }
-
 
 function getAISpeed() {
     let ballSpeed = Math.sqrt(ball.velocityX ** 2 + ball.velocityY ** 2); // Calculate ball speed
@@ -302,8 +359,6 @@ function getAISpeed() {
     return Math.min(aiSpeed, 6);
 }
 
-
 function getBallSpeed() {
     return Math.sqrt(ball.velocityX ** 2 + ball.velocityY ** 2);
-
 }
