@@ -12,17 +12,21 @@ let coinsAwarded = false; // Flag to prevent multiple coin awards
 
 // === Shop System ===
 const shopItems = {
-    red: { cost: 5, color: "red" },
-    blue: { cost: 10, color: "blue" },
-    green: { cost: 15, color: "green" }
+    red: { cost: 5, color: "red", width: 10, height: 10 },
+    blue: { cost: 10, color: "blue", width: 10, height: 10 },
+    green: { cost: 15, color: "green", width: 10, height: 10 },
+    yellow: { cost: 20, color: "yellow", width: 20, height: 20 }  // big ball
 };
+
 
 function buyItem(itemKey) {
     const item = shopItems[itemKey];
     if (coins >= item.cost) {
         coins -= item.cost;
         selectedBallColor = item.color;
-        localStorage.setItem("pongCoins", coins); // Save updated coin count
+        ball.width = item.width;
+        ball.height = item.height;
+        localStorage.setItem("pongCoins", coins);
         updateCoinDisplay();
     } else {
         alert("Not enough coins!");
@@ -296,24 +300,25 @@ function reflectBall(ball, paddle, direction) {
 }
 
 function resetBall(playerScored) {
+    // Reset ball position
     ball.x = boardWidth / 2 - ball.width / 2;
     ball.y = boardHeight / 2 - ball.height / 2;
 
-    // Set horizontal direction only — toward the opponent
-    if (playerScored === 1) {
-        // Player 1 scored → ball goes to Player 2 (right)
-        ball.velocityX = 2;
-    } else if (playerScored === 2) {
-        // Player 2 scored → ball goes to Player 1 (left)
-        ball.velocityX = -2;
-    } else {
-        // First serve or random
-        ball.velocityX = Math.random() < 0.5 ? -2 : 2;
-    }
+    // Reset velocity
+    if (playerScored === 1) ball.velocityX = 2;
+    else if (playerScored === 2) ball.velocityX = -2;
+    else ball.velocityX = Math.random() < 0.5 ? -2 : 2;
 
-    // No vertical movement at the start
     ball.velocityY = 0;
+
+    // Ensure ball size matches selected item (optional, in case)
+    const item = Object.values(shopItems).find(i => i.color === selectedBallColor);
+    if (item) {
+        ball.width = item.width;
+        ball.height = item.height;
+    }
 }
+
 
 function restartGame() {
     gameOver = false;
