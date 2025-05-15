@@ -12,10 +12,11 @@ let coinsAwarded = false; // Flag to prevent multiple coin awards
 
 // === Shop System ===
 const shopItems = {
-    red: { cost: 5, color: "red", width: 10, height: 10 },
-    blue: { cost: 10, color: "blue", width: 10, height: 10 },
-    green: { cost: 15, color: "green", width: 10, height: 10 },
-    yellow: { cost: 20, color: "yellow", width: 20, height: 20 }  // big ball
+    red:    { cost:  5, color: "red",       width: 10, height: 10 },
+    blue:   { cost: 10, color: "blue",      width: 10, height: 10 },
+    green:  { cost: 15, color: "green",     width: 10, height: 10 },
+    yellow: { cost: 20, color: "yellow",    width: 20, height: 20 },
+    purple: { cost: 30, color: "purple",    width: 10, height: 10 } // ← NEW
 };
 
 
@@ -279,12 +280,28 @@ function detectCollision(ball, paddle) {
         ball.y + ball.height > paddle.y
     );
 }
-
 function reflectBall(ball, paddle, direction) {
-    let collidePoint = ball.y + ball.height / 2 - (paddle.y + paddle.height / 2);
-    collidePoint = collidePoint / (paddle.height / 2); // -1 to 1
-    let angleRad = collidePoint * Math.PI / 4;
-    let speed = Math.sqrt(ball.velocityX ** 2 + ball.velocityY ** 2) * 1.2; // increase ball on hit
+    // ---> your existing bounce math here <---
+    // e.g.:
+    let collidePoint = ball.y + ball.height/2 - (paddle.y + paddle.height/2);
+    collidePoint = collidePoint / (paddle.height/2);
+    let angleRad = collidePoint * Math.PI/4;
+    let speed = Math.hypot(ball.velocityX, ball.velocityY) * 1.2;
+    ball.velocityX = direction * speed * Math.cos(angleRad);
+    ball.velocityY =      speed * Math.sin(angleRad);
+    ball.x = direction===1
+      ? paddle.x + paddle.width
+      : paddle.x - ball.width;
+
+    // ---> new “purple” max‐speed cap logic <---
+    const cap = selectedBallColor === "purple" ? 12 : MAX_BALL_SPEED;
+    let current = Math.hypot(ball.velocityX, ball.velocityY);
+    if (current > cap) {
+        let scale = cap / current;
+        ball.velocityX *= scale;
+        ball.velocityY *= scale;
+    }
+}
 
     ball.velocityX = direction * speed * Math.cos(angleRad);
     ball.velocityY = speed * Math.sin(angleRad);
@@ -297,7 +314,7 @@ function reflectBall(ball, paddle, direction) {
         ball.velocityX *= scale;
         ball.velocityY *= scale; 
     }
-}
+
 
 function resetBall(playerScored) {
     // Reset ball position
