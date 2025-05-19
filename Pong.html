@@ -10,26 +10,20 @@
 <body>
   <canvas id="board"></canvas>
   <div id="coin-display" style="position: absolute; top: 10px; left: 10px; color: darkblue; font-family: Arial;">
-    Coins: <span id="coin-count">0</span>
+    PongCoins: <span id="coin-count">0</span>
   </div>
-  
-</div>
 
-<div id="shop" style="display: none; position: absolute; top: 100px; left: 50px; background: black; padding: 10px; border: 1px solid white; color: white;">
+  <div id="shop" style="display: none; position: absolute; top: 100px; left: 50px; background: black; padding: 10px; border: 1px solid white; color: white;">
     <h3>Shop</h3>
     <button onclick="buyItem('red')">Red Ball (5 coins)</button>
     <button onclick="buyItem('blue')">Blue Ball (10 coins)</button>
     <button onclick="buyItem('green')">Green Ball (15 coins)</button>
     <button onclick="buyItem('yellow')">Yellow Ball (Big) (20 coins)</button>
-    <button onclick="buyItem('purple')">
-        Purple Ball (30 coins) (FAST)
-      </button>
-      
+    <button onclick="buyItem('purple')">Purple Ball (Fast) (30 coins)</button>
+    <button onclick="buyItem('orange')"> Orange Ball (Faster and Smaller) (50 coins)</button>
     <br><br>
     <button onclick="toggleShop()">Close Shop (E)</button>
-</div>
-
-  
+  </div>
 
   <p>Hello everyone, this is my ping pong game and I am going to introduce the controls.</p>
   <p>To move the rackets you must play with W/S or ↑/↓ arrow keys.</p>
@@ -39,10 +33,5 @@
   <h2>To go the shop press "e"</h2>
   <h2>To gain coins win games</h2>
   <h2>Easy:1 coin, Medium:5 coins, Hard:15 coins</h2>
-
-  
-  
-  
 </body>
 </html>
-
