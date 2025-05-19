@@ -1,7 +1,7 @@
 // === Game Settings ===
 let paused = false;
 let isSinglePlayer = true;
-let aiDifficulty = "medium"; // Options: easy, medium, hard
+let aiDifficulty = "medium"; // Options: easy, medium, hard and harder
 const MAX_BALL_SPEED = 8;
 let board;
 let boardWidth = 500;
@@ -9,7 +9,7 @@ let boardHeight = 500;
 let context;
 let coins = 0;
 let coinsAwarded = false;
-const MAX_AI_SPEED = 6;
+const MAX_AI_SPEED = 7;
 
 // === Shop System ===
 const shopItems = {
@@ -17,7 +17,8 @@ const shopItems = {
     blue:   { cost: 10, color: "blue",   width: 10, height: 10 },
     green:  { cost: 15, color: "green",  width: 10, height: 10 },
     yellow: { cost: 20, color: "yellow", width: 20, height: 20 },
-    purple: { cost: 30, color: "purple", width: 10, height: 10 } // NEW
+    purple: { cost: 30, color: "purple", width: 10, height: 10 },
+    orange: { cost: 50, color: "orange", width:7, height : 7 }, 
 };
 
 function buyItem(itemKey) {
@@ -104,6 +105,7 @@ window.onload = function () {
         else if (e.code === "Digit1") aiDifficulty = "easy";
         else if (e.code === "Digit2") aiDifficulty = "medium";
         else if (e.code === "Digit3") aiDifficulty = "hard";
+        else if (e.code === "Digit4") aiDifficulty = "harder";
         else if (e.code === "KeyP") {
             paused = !paused;
             if (!paused && !gameOver) requestAnimationFrame(update);
@@ -135,6 +137,7 @@ function update() {
             if (aiDifficulty === "easy") reward = 1;
             else if (aiDifficulty === "medium") reward = 5;
             else if (aiDifficulty === "hard") reward = 15;
+            else if (aiDifficulty === "harder") reward = 23;
 
             coins += reward;
             localStorage.setItem("pongCoins", coins);
@@ -252,7 +255,7 @@ function reflectBall(ball, paddle, direction) {
     ball.velocityX = direction * speed * Math.cos(angleRad);
     ball.velocityY = speed * Math.sin(angleRad);
     ball.x = direction === 1 ? paddle.x + paddle.width : paddle.x - ball.width;
-
+    //purple ball
     const cap = selectedBallColor === "purple" ? 12 : MAX_BALL_SPEED;
     let current = Math.hypot(ball.velocityX, ball.velocityY);
     if (current > cap) {
@@ -260,7 +263,15 @@ function reflectBall(ball, paddle, direction) {
         ball.velocityX *= scale;
         ball.velocityY *= scale;
     }
-}
+}//Orange Ball
+const cap = selectedBallColor === "orange" ? 20 : MAX_BALL_SPEED;
+    let current = Math.hypot(ball.velocityX, ball.velocityY);
+    if (current > cap) {
+        let scale = cap / current;
+        ball.velocityX *= scale;
+        ball.velocityY *= scale;
+    }
+
 
 function resetBall(playerScored) {
     ball.x = boardWidth / 2 - ball.width / 2;
@@ -293,7 +304,7 @@ function getBallSpeed() {
 
 function getAISpeed() {
     let ballSpeed = getBallSpeed();
-    let difficultyFactor = { easy: 0.55, medium: 0.65, hard: 0.8 }[aiDifficulty] || 0.55;
+    let difficultyFactor = { easy: 0.55, medium: 0.65, hard: 0.8, harder:0.9 }[aiDifficulty] || 0.55;
     let aiSpeed = ballSpeed * difficultyFactor + Math.abs(ball.y + ball.height / 2 - (player2.y + player2.height / 2)) / 100;
     return Math.min(aiSpeed, MAX_AI_SPEED);
 }
@@ -303,6 +314,7 @@ function getAIError() {
         case "easy": return 1.2;
         case "medium": return 0.6;
         case "hard": return 0.3;
+        case "harder": return 0.1;
         default: return 0.6;
     }
 }
@@ -312,6 +324,7 @@ function getAIAccel() {
         case "easy": return 0.25;
         case "medium": return 0.4;
         case "hard": return 0.7;
+        case "harder": return 0.9;
         default: return 0.4;
     }
 }
