@@ -1,4 +1,4 @@
-// === Game Settings ===
+// === Game Settings === //
 let paused = false;
 let isSinglePlayer = true;
 let aiDifficulty = "medium"; // Options: easy, medium, hard and harder
@@ -7,9 +7,15 @@ let board;
 let boardWidth = 500;
 let boardHeight = 500;
 let context;
-let coins = 0;
+
 let coinsAwarded = false;
+let playerData = {
+    coins: 0,
+    purchasedItems: [],
+    selectedItem: null// item they own
+}
 const MAX_AI_SPEED = 7;
+let selectedBallColor = "white";
 
 // === Shop System ===
 const shopItems = {
@@ -19,31 +25,37 @@ const shopItems = {
     yellow: { cost: 20, color: "yellow", width: 20, height: 20 },
     purple: { cost: 30, color: "purple", width: 10, height: 10 },
     orange: { cost: 50, color: "orange", width:7, height : 7 }, 
-};
+}; 
 
 function buyItem(itemKey) {
     const item = shopItems[itemKey];
-    if (coins >= item.cost) {
-        coins -= item.cost;
-        selectedBallColor = item.color;
-        ball.width = item.width;
-        ball.height = item.height;
-        localStorage.setItem("pongCoins", coins);
-        updateCoinDisplay();
-    } else {
-        alert("Not enough coins!");
+    if (!item) return;
+
+    if (!playerData.purchasedItems.includes(itemKey)) {
+        if (playerData.coins >= item.cost) {
+            playerData.coins -= item.cost;
+            playerData.purchasedItems.push(itemKey);
+        } else {
+            alert("Not enough coins!");
+            return;
+        }
     }
-}
 
+    playerData.selectedItem = itemKey;
+    applyItemToBall(itemKey);
+    savePlayerData();
+    updateCoinDisplay();
+}
+ //==update the Coin Display==/
 function updateCoinDisplay() {
-    const coinDisplay = document.getElementById("coin-count");
-    if (coinDisplay) coinDisplay.textContent = coins;
-}
+    const coinDisplay = document.getElementById ("coin-count");
+    if (coinDisplay) coinDisplay.textContent = playerData.coins;
 
+}
 function toggleShop() {
     const shop = document.getElementById("shop");
     shop.style.display = shop.style.display === "none" ? "block" : "none";
-}
+} 
 
 // === Player and Ball Dimensions ===
 let playerWidth = 10;
@@ -82,23 +94,50 @@ let ball = {
     velocityX: 2,
     velocityY: 2
 };
-
-let selectedBallColor = "white";
-
-// === Init Game ===
+//==WINDOW.Onload===//
 window.onload = function () {
     board = document.getElementById("board");
     board.width = boardWidth;
     board.height = boardHeight;
     context = board.getContext("2d");
 
-    let savedCoins = localStorage.getItem("pongCoins");
-    coins = savedCoins ? parseInt(savedCoins) : 0;
-    updateCoinDisplay();
+    try {
+        let savedPlayerData = localStorage.getItem("pongPlayerData");
+        if (savedPlayerData) {
+            playerData = JSON.parse(savedPlayerData);
+            coins = playerData.coins || 0;
 
+            if (playerData.selectedItem) {
+                applyItemToBall(playerData.selectedItem);
+            }
+        } else {
+            playerData = {
+                coins: 0,
+                purchasedItems: [],
+                selectedItem: null
+            };
+            coins = 0;
+        }  
+    } catch (e) {
+        console.error("Failed to load player data:", e);
+        // fallback
+        playerData = {
+            coins: 0,
+            purchasedItems: [],
+            selectedItem: null
+        };
+        coins = 0;
+    } if (playerData.selectedItem) {
+        applyItemToBall(playerData.selectedItem);
+    }
+    
+
+    updateCoinDisplay();
+    if (typeof updateShopUI === "function") updateShopUI();
+
+    // The rest of your setup
     document.addEventListener("keydown", movePlayer);
     document.addEventListener("keyup", stopPlayer);
-
     document.addEventListener("keydown", function (e) {
         if (e.code === "Space" && gameOver) restartGame();
         else if (e.code === "KeyM") isSinglePlayer = !isSinglePlayer;
@@ -113,10 +152,28 @@ window.onload = function () {
     });
 
     resetBall(0);
+          // example reward logic inside a conditional, e.g.:
+    if (player1Score >= 5 && isSinglePlayer && !coinsAwarded) {
+        let reward = 0;
+        if (aiDifficulty === "easy") reward = 1;
+        else if (aiDifficulty === "medium") reward = 5;
+        else if (aiDifficulty === "hard") reward = 15;
+        else if (aiDifficulty === "harder") reward = 23;
+
+        playerData.coins += reward;
+        savePlayerData(); // Save updated playerData
+        updateCoinDisplay();
+        console.log(`You won! Coins earned: ${reward}. Total coins: ${playerData.coins}`);
+        coinsAwarded = true;
+    }
+
     requestAnimationFrame(update);
 };
+       
 
-// === Game Loop ===
+
+
+// === Game Loop ===//
 function update() {
     context.clearRect(0, 0, boardWidth, boardHeight);
 
@@ -130,28 +187,25 @@ function update() {
     if (player2Score >= 5 || player1Score >= 5) {
         gameOver = true;
 
-        context.fillText("Coins: " + coins, 10, 50);
+        coins += reward;
+        localStorage.setItem("pongCoins", coins);
+        updateCoinDisplay();
+        console.log(`You won! Coins earned: ${reward}. Total coins: ${coins}`);
+        
 
-        if (player1Score >= 5 && isSinglePlayer && !coinsAwarded) {
-            let reward = 0;
-            if (aiDifficulty === "easy") reward = 1;
-            else if (aiDifficulty === "medium") reward = 5;
-            else if (aiDifficulty === "hard") reward = 15;
-            else if (aiDifficulty === "harder") reward = 23;
-
-            coins += reward;
+        
             localStorage.setItem("pongCoins", coins);
             updateCoinDisplay();
             console.log(`You won! Coins earned: ${reward}. Total coins: ${coins}`);
             coinsAwarded = true;
-        }
-    } else {
+        } 
+    
         // Draw center line
         for (let y = 0; y < boardHeight; y += 20) {
             context.fillStyle = "gray";
             context.fillRect(boardWidth / 2 - 1, y, 2, 10);
         }
-
+        context.fillText ("Coins:" + playerData.coins, 10, 50);
         // Player 1 move
         let nextY1 = player1.y + player1.velocityY;
         if (!outOfBounds(nextY1, player1.height)) player1.y = nextY1;
@@ -167,7 +221,7 @@ function update() {
             let nextY2 = player2.y + player2.velocityY;
             if (!outOfBounds(nextY2, player2.height)) player2.y = nextY2;
         }
-
+       context.fillText ("Coins:" + playerData.coins, 10, 50);
         // Move ball
         ball.x += ball.velocityX;
         ball.y += ball.velocityY;
@@ -185,15 +239,33 @@ function update() {
             resetBall(2);
         } else if (ball.x > boardWidth) {
             player1Score++;
-            if (player1Score >= 5) gameOver = true;
+            if (player1Score >= 5) {
+                gameOver = true;
+        
+                if (isSinglePlayer && !coinsAwarded) {
+                    let reward = 0;
+                    if (aiDifficulty === "easy") reward = 1;
+                    else if (aiDifficulty === "medium") reward = 5;
+                    else if (aiDifficulty === "hard") reward = 15;
+                    else if (aiDifficulty === "harder") reward = 23;
+        
+                    playerData.coins += reward;
+                    savePlayerData();
+                    updateCoinDisplay();
+                    console.log(`You won! Coins earned: ${reward}. Total coins: ${playerData.coins}`);
+                    coinsAwarded = true;
+                }
+            }
             resetBall(1);
         }
+        
 
         // Draw
         context.fillStyle = "white";
         context.fillRect(player1.x, player1.y, player1.width, player1.height);
         context.fillRect(player2.x, player2.y, player2.width, player2.height);
 
+       
         context.fillStyle = selectedBallColor;
         context.fillRect(ball.x, ball.y, ball.width, ball.height);
 
@@ -202,20 +274,22 @@ function update() {
         context.fillText("Player 1: " + player1Score, 10, 20);
         context.fillText("Player 2: " + player2Score, boardWidth - 120, 20);
         context.fillText("Mode: " + (isSinglePlayer ? "Single Player" : "Multiplayer"), boardWidth / 2 - 70, 20);
-        if (isSinglePlayer) context.fillText("AI: " + aiDifficulty.toUpperCase(), boardWidth / 2 - 40, 40);
 
-        requestAnimationFrame(update);
-    }
-
-    if (gameOver) {
-        context.fillStyle = "red";
-        context.font = "30px Arial";
-        let winner = player1Score >= 5 ? "Player 1 Wins!" : "Player 2 Wins!";
-        context.fillText(winner, boardWidth / 2 - context.measureText(winner).width / 2, boardHeight / 2);
-        context.font = "20px Arial";
-        context.fillText("Press Space to Restart", boardWidth / 2 - 110, boardHeight / 2 + 30);
-    }
-}
+        if (isSinglePlayer) {
+            context.fillText("AI: " + aiDifficulty.toUpperCase(), boardWidth / 2 - 40, 40);
+        }
+        
+        if (gameOver) {
+            context.fillStyle = "white";
+            context.font = "30px Arial";
+            let winner = player1Score >= 5 ? "Player 1 Wins!" : "Player 2 Wins!";
+            context.fillText(winner, boardWidth / 2 - context.measureText(winner).width / 2, boardHeight / 2);
+            context.font = "20px Arial";
+            context.fillText("Press Space to Restart", boardWidth / 2 - 110, boardHeight / 2 + 30);
+        } else {
+            requestAnimationFrame(update);
+        } }
+        
 
 // === Controls ===
 function movePlayer(e) {
@@ -246,6 +320,9 @@ function detectCollision(ball, paddle) {
         ball.y + ball.height > paddle.y
     );
 }
+function savePlayerData() {
+    localStorage.setItem("pongPlayerData", JSON.stringify(playerData));
+}
 
 function reflectBall(ball, paddle, direction) {
     let collidePoint = ball.y + ball.height / 2 - (paddle.y + paddle.height / 2);
@@ -255,24 +332,20 @@ function reflectBall(ball, paddle, direction) {
     ball.velocityX = direction * speed * Math.cos(angleRad);
     ball.velocityY = speed * Math.sin(angleRad);
     ball.x = direction === 1 ? paddle.x + paddle.width : paddle.x - ball.width;
-    //purple ball
-    const cap = selectedBallColor === "purple" ? 12 : MAX_BALL_SPEED;
-    let current = Math.hypot(ball.velocityX, ball.velocityY);
-    if (current > cap) {
-        let scale = cap / current;
-        ball.velocityX *= scale;
-        ball.velocityY *= scale;
-    }
-}//Orange Ball
-const cap = selectedBallColor === "orange" ? 20 : MAX_BALL_SPEED;
-    let current = Math.hypot(ball.velocityX, ball.velocityY);
-    if (current > cap) {
-        let scale = cap / current;
-        ball.velocityX *= scale;
-        ball.velocityY *= scale;
-    }
+}   //======Purple and Orange ball=====/
+    let cap = MAX_BALL_SPEED;
+if (selectedBallColor === "purple") cap = 12;
+if (selectedBallColor === "orange") cap = 20;
+
+let current = Math.hypot(ball.velocityX, ball.velocityY);
+if (current > cap) {
+    let scale = cap / current;
+    ball.velocityX *= scale;
+    ball.velocityY *= scale;
+}
 
 
+selectedBallColor
 function resetBall(playerScored) {
     ball.x = boardWidth / 2 - ball.width / 2;
     ball.y = boardHeight / 2 - ball.height / 2;
@@ -327,4 +400,12 @@ function getAIAccel() {
         case "harder": return 0.9;
         default: return 0.4;
     }
+}
+function applyItemToBall(itemKey) {
+    const item = shopItems [itemKey];
+    if (!item) return;
+    selectedBallColor = item.color;
+    ball.width = item.width;
+    ball.height = item.height;
+
 }
