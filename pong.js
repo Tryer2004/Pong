@@ -145,6 +145,7 @@ window.onload = function () {
         else if (e.code === "Digit2") aiDifficulty = "medium";
         else if (e.code === "Digit3") aiDifficulty = "hard";
         else if (e.code === "Digit4") aiDifficulty = "harder";
+        else if (e.code === "Digit5") aiDifficulty = "impossible";
         else if (e.code === "KeyP") {
             paused = !paused;
             if (!paused && !gameOver) requestAnimationFrame(update);
@@ -158,7 +159,8 @@ window.onload = function () {
         if (aiDifficulty === "easy") reward = 1;
         else if (aiDifficulty === "medium") reward = 5;
         else if (aiDifficulty === "hard") reward = 15;
-        else if (aiDifficulty === "harder") reward = 23;
+        else if (aiDifficulty === "harder") reward = 25;
+        else if (aiDifficulty === "impossible") reward = 30;
 
         playerData.coins += reward;
         savePlayerData(); // Save updated playerData
@@ -247,7 +249,8 @@ function update() {
                     if (aiDifficulty === "easy") reward = 1;
                     else if (aiDifficulty === "medium") reward = 5;
                     else if (aiDifficulty === "hard") reward = 15;
-                    else if (aiDifficulty === "harder") reward = 23;
+                    else if (aiDifficulty === "harder") reward = 25;
+                    else if (aiDifficulty === "impossible") reward = 30;
         
                     playerData.coins += reward;
                     savePlayerData();
@@ -388,6 +391,7 @@ function getAIError() {
         case "medium": return 0.6;
         case "hard": return 0.3;
         case "harder": return 0.1;
+        case "impossible": return 0.01;
         default: return 0.6;
     }
 }
@@ -398,6 +402,7 @@ function getAIAccel() {
         case "medium": return 0.4;
         case "hard": return 0.7;
         case "harder": return 0.9;
+        case "impossible":return 0.99
         default: return 0.4;
     }
 }
